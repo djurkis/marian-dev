@@ -6,6 +6,7 @@
 #include "models/bert.h"
 
 #include "models/costs.h"
+#include "models/sutskever.h"
 
 #include "models/amun.h"
 #include "models/nematus.h"
@@ -37,7 +38,8 @@ Ptr<EncoderBase> EncoderFactory::construct(Ptr<ExpressionGraph> graph) {
 
   if(options_->get<std::string>("type") == "transformer")
     return NewEncoderTransformer(graph, options_);
-
+  if(options_->get<std::string>("type") == "sutskever")
+    return New<EncoderSutskever>(options_);
   if(options_->get<std::string>("type") == "bert-encoder")
     return New<BertEncoder>(graph, options_);
 
@@ -49,6 +51,8 @@ Ptr<DecoderBase> DecoderFactory::construct(Ptr<ExpressionGraph> graph) {
     return New<DecoderS2S>(graph, options_);
   if(options_->get<std::string>("type") == "transformer")
     return NewDecoderTransformer(graph, options_);
+  if(options_->get<std::string>("type") == "sutskever")
+    return New<DecoderSutskever>(options_);
   ABORT("Unknown decoder type");
 }
 
@@ -107,6 +111,12 @@ Ptr<IModel> createBaseModelByType(std::string type, usage use, Ptr<Options> opti
         .push_back(models::encoder()("type", "s2s"))
         .push_back(models::decoder()("type", "s2s"))
         .construct(graph);
+  }
+  else if(type == "sutskever") {
+    return models::encoder_decoder()(options)
+        .push_back(models::encoder()("type", "sutskever"))
+        .push_back(models::decoder()("type", "sutskever"))
+        .construct();
   }
 
   else if(type == "transformer") {
